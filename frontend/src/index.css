@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* ===== טוקנים של עיצוב: מקור יחיד לצבעים, גופנים וצללים ===== */
+@theme {
+  --font-sans: "Segoe UI Variable", "Segoe UI", system-ui, "Arial Hebrew", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* משטחים וגבולות (פלטת Light של GitHub) */
+  --color-canvas: #ffffff;
+  --color-subtle: #f6f8fa;
+  --color-inset: #eef1f4;
+  --color-line: #d1d9e0;
+  --color-line-strong: #b6bec7;
+
+  /* טקסט */
+  --color-ink: #1f2328;
+  --color-ink-2: #2f363d;
+  --color-muted: #59636e;
+
+  /* צבעי מצב ומבטא: נגיעות עדינות */
+  --color-green: #1f883d;
+  --color-green-deep: #116329;
+  --color-green-soft: #dafbe1;
+  --color-red: #cf222e;
+  --color-red-soft: #ffebe9;
+  --color-yellow: #f2cc0c;
+  --color-yellow-deep: #6b5600;
+  --color-yellow-soft: #fff8c2;
+  --color-yellow-line: #efdc5a;
+  --color-pink: #d6409f;
+  --color-pink-deep: #a0286e;
+  --color-pink-soft: #ffeff7;
+  --color-orange: #fd8c73;
+  --color-orange-deep: #a8380f;
+  --color-orange-soft: #fff1ec;
+  --color-purple: #8250df;
+  --color-purple-soft: #f3ebff;
+
+  --shadow-card: 0 1px 0 rgb(31 35 40 / 0.04), 0 1px 3px rgb(31 35 40 / 0.06);
+  --shadow-pop: 0 16px 40px -20px rgb(31 35 40 / 0.35);
+
+  --animate-ring: ring 1.8s ease-out infinite;
+  --animate-rise: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes ring {
+    0% { box-shadow: 0 0 0 0 rgb(242 204 12 / 0.55); }
+    100% { box-shadow: 0 0 0 10px rgb(242 204 12 / 0); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+html { background: var(--color-canvas); }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--color-ink-2);
+  -webkit-font-smoothing: antialiased;
+}
+code, kbd, pre { font-family: var(--font-mono); }
+/* קוד תמיד משמאל לימין, גם בתוך טקסט עברי */
+code, .ltr { direction: ltr; unicode-bidi: isolate; }
+::selection { background: var(--color-yellow-soft); }
+:focus-visible { outline: 2px solid var(--color-green); outline-offset: 2px; border-radius: 6px; }
