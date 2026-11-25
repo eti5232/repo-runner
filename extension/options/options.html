@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>RepoRunner: הגדרות</title>
+    <style>
+      body { font: 14px "Segoe UI", system-ui, sans-serif; color: #1f2328; margin: 20px; width: 340px; }
+      h1 { font-size: 16px; margin: 0 0 12px; }
+      label { display: block; color: #59636e; margin-bottom: 6px; }
+      input { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #d1d9e0; border-radius: 8px; direction: ltr; font: 13px ui-monospace, Consolas, monospace; }
+      button { margin-top: 12px; padding: 8px 16px; border: 0; border-radius: 8px; background: #1f883d; color: #fff; font-weight: 600; cursor: pointer; }
+      #status { margin-inline-start: 10px; color: #1f883d; }
+    </style>
+  </head>
+  <body>
+    <h1>RepoRunner for GitHub</h1>
+    <label for="app-url">כתובת האתר של RepoRunner</label>
+    <input id="app-url" placeholder="http://localhost:5180" />
+    <button id="save">שמור</button><span id="status"></span>
+    <script src="options.js"></script>
+  </body>
+</html>

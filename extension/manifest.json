@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "RepoRunner for GitHub",
+  "version": "1.0.0",
+  "description": "כפתור 'הרץ עם RepoRunner' בדפי ריפו ב-GitHub: פותח את האתר של הסוכן עם הקישור מוכן.",
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": ["content/content.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": { "page": "options/options.html", "open_in_tab": false }
+}
