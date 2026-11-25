@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>הפוך את הפרויקט לרץ · Run #12 · RepoRunner</title>
+<style>
+:root[data-theme=dark]{
+  --bg:#0d1117; --card:#151b23; --card2:#1a212b; --bd:#30363d; --bd2:#3d444d; --fg:#f0f6fc; --tx:#d1d7e0; --mut:#9198a1;
+  --acc:#4493f8; --ok:#3fb950; --okb:#238636; --okh:#2ea043; --att:#d29922; --attb:#9e6a03; --bad:#f85149; --badb:#da3633; --done:#ab7df8;
+  --addbg:#2ea04322; --addfg:#7ee787; --delfg:#ffa198; --chip:#ffffff14; --glow:#4493f81f; --head:#0d1117e6;
+}
+:root[data-theme=light]{
+  --bg:#fff; --card:#f6f8fa; --card2:#eef1f4; --bd:#d1d9e0; --bd2:#bcc4cc; --fg:#1f2328; --tx:#31373d; --mut:#59636e;
+  --acc:#0969da; --ok:#1a7f37; --okb:#1f883d; --okh:#1c8139; --att:#9a6700; --attb:#bf8700; --bad:#d1242f; --badb:#cf222e; --done:#8250df;
+  --addbg:#dafbe1; --addfg:#116329; --delfg:#82071e; --chip:#0000000f; --glow:#0969da14; --head:#ffffffe6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:"Segoe UI Variable","Segoe UI",-apple-system,"Arial Hebrew",Arial,sans-serif;font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--acc);text-decoration:none}
+code,.mono{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;direction:ltr;unicode-bidi:embed}
+code{background:var(--chip);border-radius:6px;padding:.15em .45em;font-size:85%}
+svg.i{width:16px;height:16px;fill:currentColor;vertical-align:text-bottom;flex:none}
+.num{font-variant-numeric:tabular-nums}
+
+/* ===== כותרת ===== */
+.hd{position:sticky;top:0;z-index:30;background:var(--head);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--bd)}
+.hd .in{max-width:1240px;margin:0 auto;padding:0 32px;height:64px;display:flex;align-items:center;gap:20px}
+.brand{display:flex;align-items:center;gap:11px;color:var(--fg);font-weight:650;font-size:17px;letter-spacing:-.2px}
+.mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(145deg,#2ea043,#196c2e);display:grid;place-items:center;box-shadow:inset 0 1px 0 #ffffff40,0 4px 14px #23863655}
+.mark::after{content:"";width:13px;height:13px;border:2.6px solid #fff;border-radius:50%;border-inline-start-color:transparent;transform:rotate(25deg)}
+.sep{width:1px;height:22px;background:var(--bd)}
+.crumb{color:var(--mut);direction:ltr;font-size:14px}
+.crumb b{color:var(--fg);font-weight:600}
+.sp{flex:1}
+.search{width:300px;height:36px;border:1px solid var(--bd);border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:space-between;padding:0 12px;color:var(--mut);font-size:13.5px}
+.search kbd{font-family:inherit;font-size:11px;border:1px solid var(--bd);border-radius:5px;padding:1px 6px}
+.ib{width:36px;height:36px;border:1px solid var(--bd);border-radius:10px;background:var(--card);display:grid;place-items:center;color:var(--mut)}
+.ib:hover{color:var(--fg);border-color:var(--bd2)}
+.av{width:32px;height:32px;border-radius:50%;background:linear-gradient(145deg,#6e7681,#30363d);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.av.bot{background:linear-gradient(145deg,#2ea043,#196c2e)}
+
+/* ===== כותרת הריפו + לשוניות ===== */
+.rp{border-bottom:1px solid var(--bd);background:radial-gradient(900px 220px at 85% -40%,var(--glow),transparent)}
+.rp .in{max-width:1240px;margin:0 auto;padding:28px 32px 0}
+.id{display:flex;align-items:center;gap:16px}
+.ava{width:52px;height:52px;border-radius:14px;background:linear-gradient(145deg,#1f6feb,#0b3d91);display:grid;place-items:center;color:#fff;font-weight:700;font-size:20px;box-shadow:inset 0 1px 0 #ffffff33}
+.id h1{font-size:26px;font-weight:600;letter-spacing:-.4px;color:var(--fg);direction:ltr}
+.id h1 span{color:var(--mut);font-weight:400}
+.id p{color:var(--mut);font-size:14px;margin-top:2px}
+.pub{font-size:12px;font-weight:500;border:1px solid var(--bd2);color:var(--mut);border-radius:2em;padding:0 9px;line-height:20px;margin-inline-start:8px;font-family:inherit;vertical-align:middle}
+.id .grp{margin-inline-start:auto;display:flex;gap:10px}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:var(--card)}
+.seg button{background:none;border:0;padding:0 14px;height:34px;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;color:var(--tx)}
+.seg button+button{border-inline-start:1px solid var(--bd);color:var(--mut)}
+.seg button:hover{background:var(--card2)}
+.tabs{display:flex;gap:2px;margin-top:22px;overflow-x:auto}
+.tabs a{display:flex;align-items:center;gap:8px;padding:0 14px;height:46px;color:var(--tx);font-size:14.5px;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs a:hover{color:var(--fg)}
+.tabs a.on{color:var(--fg);font-weight:600;border-color:#f78166}
+.tabs em{font-style:normal;font-size:12px;background:var(--chip);border-radius:2em;padding:0 8px;line-height:20px}
+
+/* ===== גוף ===== */
+.wrap{max-width:1240px;margin:0 auto;padding:32px 32px 90px}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+.top h2{font-size:30px;line-height:1.2;font-weight:600;letter-spacing:-.6px;color:var(--fg)}
+.top h2 span{color:var(--mut);font-weight:300;margin-inline-start:8px}
+.meta{display:flex;align-items:center;gap:12px;margin-top:14px;color:var(--mut);flex-wrap:wrap;font-size:14px}
+.meta b{color:var(--tx);font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:7px;color:#fff;font-weight:600;border-radius:2em;padding:4px 13px;font-size:13.5px}
+.badge.wait{background:var(--attb);box-shadow:0 0 0 4px #d2992224}
+.badge.run{background:var(--okb);box-shadow:0 0 0 4px #3fb95024}
+.btns{display:flex;gap:10px;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 16px;border:1px solid var(--bd);border-radius:10px;background:var(--card);font-size:14px;font-weight:600;white-space:nowrap;transition:.15s}
+.btn:hover{background:var(--card2);border-color:var(--bd2)}
+.btn.ok{background:linear-gradient(180deg,#2ea043,#238636);border-color:#ffffff22;color:#fff;box-shadow:inset 0 1px 0 #ffffff30,0 2px 10px #23863655}
+.btn.ok:hover{filter:brightness(1.1)}
+.btn.bad{color:var(--bad)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* גרף הסוכן (בסגנון Actions) */
+.flow{margin:28px 0 30px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px 22px;overflow-x:auto}
+.flow h6{font-size:12px;font-weight:600;letter-spacing:.8px;color:var(--mut);margin-bottom:16px;text-transform:uppercase}
+.nodes{display:flex;align-items:center;min-width:max-content}
+.nd{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:8px 12px 8px 14px;font-size:13px;position:relative}
+.nd .s{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;flex:none}
+.nd .s svg{width:12px;height:12px}
+.nd b{display:block;font-size:13px;font-weight:600;color:var(--fg);line-height:1.2}
+.nd small{color:var(--mut);font-size:11.5px;line-height:1.2}
+.nd.ok .s{background:var(--okb)}.nd.bad .s{background:var(--badb)}.nd.wt .s{background:var(--attb)}.nd.pend .s{background:none;border:2px solid var(--bd2)}
+.nd.wt{border-color:var(--att);box-shadow:0 0 0 4px #d2992218,0 6px 20px -8px #d2992288}
+.ln{width:22px;height:2px;background:var(--bd);flex:none}
+.ln.ok{background:var(--okb)}
+
+.cols{display:grid;grid-template-columns:1fr 310px;gap:32px;align-items:start}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.sh h3{font-size:16px;font-weight:600;color:var(--fg)}
+.pill{display:inline-flex;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:3px}
+.pill a{padding:4px 13px;border-radius:7px;color:var(--mut);font-size:13px;font-weight:500}
+.pill a.on{background:var(--card2);color:var(--fg);box-shadow:0 0 0 1px var(--bd)}
+
+/* ציר זמן */
+.tl{position:relative}
+.tl::before{content:"";position:absolute;inset-inline-start:15px;top:8px;bottom:8px;width:2px;background:var(--bd)}
+.it{position:relative;display:flex;gap:16px;margin-bottom:18px}
+.it>.av{position:relative;z-index:1;width:32px;height:32px;box-shadow:0 0 0 6px var(--bg)}
+.box{flex:1;min-width:0;border:1px solid var(--bd);border-radius:12px;background:var(--card);overflow:hidden}
+.box>h5{display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--bd);padding:10px 18px;font-size:14px;font-weight:400;color:var(--mut)}
+.box>h5 b{color:var(--fg);font-weight:600}
+.tag{font-size:11.5px;font-weight:500;border:1px solid var(--bd2);color:var(--mut);border-radius:2em;padding:0 8px;line-height:18px}
+.bd{padding:16px 18px;background:var(--bg)}
+.bd p+p{margin-top:8px}
+.row{display:grid;grid-template-columns:64px 1fr;gap:14px;padding:12px 0;border-bottom:1px solid var(--bd)}
+.row:last-child{border:0}.row:first-child{padding-top:0}.row:last-child{padding-bottom:0}
+.row>span{color:var(--mut);font-size:12.5px;font-weight:500;padding-top:2px}
+.ev{display:flex;align-items:center;gap:16px;margin-bottom:18px;color:var(--mut);font-size:14px;position:relative}
+.ev .bg{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;position:relative;z-index:1;box-shadow:0 0 0 6px var(--bg);flex:none}
+.ev .bg.ok{background:var(--okb)}.ev .bg.bad{background:var(--badb)}.ev .bg.att{background:var(--attb)}
+.ev b{color:var(--fg);font-weight:600}
+.diff{border:1px solid var(--bd);border-radius:10px;overflow:auto;direction:ltr;font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:12.5px;background:var(--bg)}
+.diff .f{background:var(--card);border-bottom:1px solid var(--bd);padding:7px 14px;display:flex;justify-content:space-between;color:var(--fg);font-size:12px}
+.diff .f span{color:var(--ok)}
+.diff .l{display:grid;grid-template-columns:38px 38px 22px 1fr;line-height:22px;min-width:max-content}
+.diff .l i{font-style:normal;color:var(--mut);text-align:right;padding-right:10px;user-select:none}
+.diff .l u{text-decoration:none;text-align:center;color:var(--mut)}
+.diff .l s{text-decoration:none;white-space:pre;padding-right:14px}
+.diff .a{background:var(--addbg)}.diff .a s,.diff .a u{color:var(--addfg)}
+.err{border:1px solid var(--bd);border-radius:10px;background:var(--card);padding:10px 14px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;direction:ltr;text-align:left;color:var(--delfg);overflow-x:auto}
+
+/* כרטיס אישור */
+.appr{position:relative;border-radius:14px;padding:1px;background:linear-gradient(135deg,#d29922,#d2992233 40%,#d2992277);margin-top:26px;box-shadow:0 20px 50px -24px #d2992266}
+.appr>div{background:var(--bg);border-radius:13px;overflow:hidden}
+.ar{display:flex;gap:14px;padding:16px 20px;align-items:flex-start}
+.ar+.ar{border-top:1px solid var(--bd)}
+.ar .ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;flex:none}
+.ar b{display:block;font-weight:600;font-size:15.5px;color:var(--fg)}
+.ar small{color:var(--mut);font-size:13.5px}
+.ar.w{background:linear-gradient(180deg,#d299221a,transparent)}
+.cmd{margin-top:12px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;font-family:ui-monospace,Consolas,monospace;font-size:13.5px;direction:ltr;text-align:left;color:var(--fg)}
+.cmd i{color:var(--att);font-style:normal;margin-right:8px}
+.af{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:16px 20px;background:var(--card);border-top:1px solid var(--bd)}
+.af small{margin-inline-start:auto;color:var(--mut);font-size:13px}
+.after{display:none}
+.approved .w,.approved .af{display:none}.approved .after{display:flex}
+.approved .appr{background:linear-gradient(135deg,#3fb950,#3fb95033);box-shadow:0 20px 50px -24px #3fb95066}
+
+.log{margin-top:22px;border:1px solid var(--bd);border-radius:12px;overflow:hidden;background:var(--card)}
+.log summary{padding:12px 18px;cursor:pointer;font-weight:600;color:var(--fg);list-style:none;display:flex;justify-content:space-between}
+.log summary span{font-weight:400;color:var(--mut)}
+.log pre{padding:16px 18px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;line-height:1.75;direction:ltr;text-align:left;white-space:pre-wrap;border-top:1px solid var(--bd);color:var(--mut);background:var(--bg)}
+
+/* צד */
+.rail .c{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+.rail h6{font-size:12px;font-weight:600;letter-spacing:.7px;color:var(--mut);margin-bottom:12px;text-transform:uppercase}
+.who{display:flex;align-items:center;gap:10px;font-size:14px}
+.who small{margin-inline-start:auto;color:var(--att);font-size:12px;font-weight:500}
+.lbs{display:flex;gap:6px;flex-wrap:wrap}
+.lb{font-size:12px;font-weight:500;border-radius:2em;padding:0 10px;line-height:22px;border:1px solid transparent}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13.5px}
+.kv span{color:var(--mut)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.stats div{padding:2px 0;border-inline-start:1px solid var(--bd)}.stats div:first-child{border:0}
+.stats b{display:block;font-size:28px;font-weight:600;line-height:1.1;letter-spacing:-.5px}
+.stats small{font-size:12px;color:var(--mut)}
+.rail p{font-size:13px;color:var(--mut)}
+@media(max-width:980px){.cols{grid-template-columns:1fr}.search,.crumb,.sep{display:none}.hd .in,.rp .in,.wrap{padding-inline:16px}.top{flex-direction:column}.id .grp{display:none}.top h2{font-size:24px}.row{grid-template-columns:1fr;gap:4px}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="ck" viewBox="0 0 16 16"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></symbol>
+  <symbol id="x" viewBox="0 0 16 16"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/></symbol>
+  <symbol id="ex" viewBox="0 0 16 16"><path d="M7.25 2a.75.75 0 0 1 1.5 0v6.5a.75.75 0 0 1-1.5 0Zm.75 9.25a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/></symbol>
+  <symbol id="tm" viewBox="0 0 16 16"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"/></symbol>
+  <symbol id="st" viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></symbol>
+  <symbol id="fk" viewBox="0 0 16 16"><path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"/></symbol>
+  <symbol id="sn" viewBox="0 0 16 16"><path d="M8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-1.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM8 0a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0V.75A.75.75 0 0 1 8 0Zm0 13a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 8 13ZM2.343 2.343a.75.75 0 0 1 1.061 0l1.06 1.061a.751.751 0 0 1-1.06 1.06l-1.06-1.06a.75.75 0 0 1 0-1.06Zm9.193 9.193a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 0 1-1.06 1.061l-1.061-1.06a.75.75 0 0 1 0-1.061ZM0 8a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8Zm13 0a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5A.75.75 0 0 1 13 8Z"/></symbol>
+</svg>
+
+<header class="hd"><div class="in">
+  <a class="brand" href="#"><span class="mark"></span>RepoRunner</a>
+  <span class="sep"></span>
+  <span class="crumb">user / <b>snake-q-learning</b> / runs / <b>12</b></span>
+  <span class="sp"></span>
+  <div class="search"><span>חיפוש ריצות, קבצים ופקודות</span><kbd>Ctrl K</kbd></div>
+  <button class="ib" onclick="toggle()" title="מצב כהה / בהיר"><svg class="i"><use href="#sn"/></svg></button>
+  <div class="av">RC</div>
+</div></header>
+
+<section class="rp"><div class="in">
+  <div class="id">
+    <div class="ava">SQ</div>
+    <div><h1><span>user /</span> snake-q-learning <span class="pub">Public</span></h1><p>משחק נחש שלומד לשחק בעזרת Q-learning</p></div>
+    <div class="grp">
+      <div class="seg"><button><svg class="i"><use href="#st"/></svg>Star</button><button class="num">48</button></div>
+      <div class="seg"><button><svg class="i"><use href="#fk"/></svg>Fork</button><button class="num">12</button></div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <a href="#">קוד</a><a href="#">Issues <em>2</em></a><a href="#">Pull requests <em>1</em></a>
+    <a href="#" class="on">ריצות <em>12</em></a><a href="#">סביבה</a><a href="#">כללי בטיחות</a><a href="#">הגדרות</a>
+  </nav>
+</div></section>
+
+<main class="wrap" id="page">
+  <div class="top">
+    <div>
+      <h2>הפוך את הפרויקט לרץ<span class="num">#12</span></h2>
+      <div class="meta">
+        <span class="badge wait" id="badge"><svg class="i"><use href="#tm"/></svg><span id="btx">ממתין לאישור</span></span>
+        <span><b>RepoRunner</b> התחיל לפני 2 דקות</span><span>·</span><span>ניסיון <b class="num">2</b> מתוך 8</span><span>·</span><code>main</code><span>←</span><code>4f2a9c1</code>
+      </div>
+    </div>
+    <div class="btns"><button class="btn bad">עצור ריצה</button><button class="btn">הרץ מחדש</button></div>
+  </div>
+
+  <div class="flow">
+    <h6>מסלול הסוכן</h6>
+    <div class="nodes">
+      <div class="nd ok"><span class="s"><svg class="i"><use href="#ck"/></svg></span><div><b>clone</b><small>2 שנ׳</small></div></div><span class="ln ok"></span>
+      <div class="nd ok"><span class="s"><svg class="i"><use href="#ck"/></svg></span><div><b>analyze</b><small>1 שנ׳</small></div></div><span class="ln ok"></span>
+      <div class="nd ok"><span class="s"><svg class="i"><use href="#ck"/></svg></span><div><b>plan</b><small>3 צעדים</small></div></div><span class="ln ok"></span>
+      <div class="nd bad"><span class="s"><svg class="i"><use href="#x"/></svg></span><div><b>execute</b><small>נכשל</small></div></div><span class="ln ok"></span>
+      <div class="nd ok"><span class="s"><svg class="i"><use href="#ck"/></svg></span><div><b>diagnose</b><small>3 קבצים נקראו</small></div></div><span class="ln ok"></span>
+      <div class="nd ok"><span class="s"><svg class="i"><use href="#ck"/></svg></span><div><b>fix</b><small>תיקון 2</small></div></div><span class="ln"></span>
+      <div class="nd wt"><span class="s"><svg class="i"><use href="#ex"/></svg></span><div><b>safety_gate</b><small>ממתין לאדם</small></div></div><span class="ln"></span>
+      <div class="nd pend"><span class="s"></span><div><b>verify</b><small>בהמתנה</small></div></div><span class="ln"></span>
+      <div class="nd pend"><span class="s"></span><div><b>report</b><small>בהמתנה</small></div></div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="sh"><h3>שיחה</h3><div class="pill"><a href="#" class="on">שיחה</a><a href="#">פקודות</a><a href="#">קבצים</a></div></div>
+      <div class="tl">
+        <div class="it"><div class="av bot">RR</div>
+          <div class="box"><h5><b>RepoRunner</b><span class="tag">bot</span>פתח את הריצה · לפני 2 דקות</h5>
+            <div class="bd"><p>ניתחתי את הפרויקט ובניתי תוכנית של 3 צעדים.</p><p>נמצאו <code>requirements.txt</code> ו-<code>main.py</code>. בדיקת ההצלחה: <code>python main.py</code>.</p></div></div></div>
+
+        <div class="ev"><div class="bg bad"><svg class="i"><use href="#x"/></svg></div><span>הצעד <code>python main.py</code> <b>נכשל</b> · לפני 2 דקות</span></div>
+
+        <div class="it"><div class="av bot">RR</div>
+          <div class="box"><h5><b>RepoRunner</b><span class="tag">bot</span>ניסיון 1: חבילה חסרה</h5>
+            <div class="bd">
+              <div class="row"><span>אבחון</span><div>הסקריפט מייבא את <code>numpy</code>, והיא חסרה ב-<code>requirements.txt</code>.</div></div>
+              <div class="row"><span>תיקון</span><div><div class="diff"><div class="f">requirements.txt <span>+1 −0</span></div>
+                <div class="l"><i>1</i><i>1</i><u></u><s>pygame==2.5.2</s></div>
+                <div class="l a"><i></i><i>2</i><u>+</u><s>numpy==1.26.4</s></div></div></div></div>
+            </div></div></div>
+
+        <div class="ev"><div class="bg ok"><svg class="i"><use href="#ck"/></svg></div><span>שער הבטיחות סימן <b>בטוח</b> והתיקון הופעל אוטומטית</span></div>
+        <div class="ev"><div class="bg bad"><svg class="i"><use href="#x"/></svg></div><span>ההרצה נכשלה שוב · לפני דקה</span></div>
+
+        <div class="it"><div class="av bot">RR</div>
+          <div class="box"><h5><b>RepoRunner</b><span class="tag">bot</span>ניסיון 2: ספריית מערכת חסרה</h5>
+            <div class="bd">
+              <div class="row"><span>שגיאה</span><div><div class="err">ModuleNotFoundError: No module named 'tkinter'</div></div></div>
+              <div class="row"><span>אבחון</span><div><code>tkinter</code> היא ספריית מערכת ולא ניתנת להתקנה עם pip. נדרשת החבילה <code>python3-tk</code>.</div></div>
+              <div class="row"><span>תיקון</span><div><div class="diff"><div class="f">Dockerfile <span>+1 −0</span></div>
+                <div class="l"><i>1</i><i>1</i><u></u><s>FROM python:3.12-slim</s></div>
+                <div class="l a"><i></i><i>2</i><u>+</u><s>RUN apt-get update &amp;&amp; apt-get install -y python3-tk</s></div>
+                <div class="l"><i>2</i><i>3</i><u></u><s>WORKDIR /workspace</s></div></div></div></div>
+            </div></div></div>
+
+        <div class="ev"><div class="bg att"><svg class="i"><use href="#ex"/></svg></div><span>שער הבטיחות סימן <b>רגיש</b>: נדרש אישור אדם</span></div>
+      </div>
+
+      <div class="appr"><div>
+        <div class="ar"><div class="ic" style="background:var(--okb)"><svg class="i"><use href="#ck"/></svg></div><div><b>תיקון 1 הופעל אוטומטית</b><small>pip install numpy · בטוח לפי כללי הבטיחות</small></div></div>
+        <div class="ar w"><div class="ic" style="background:var(--attb)"><svg class="i"><use href="#ex"/></svg></div><div style="flex:1"><b>נדרש אישור שלך</b><small>פקודות <code>apt</code> משנות את המערכת, ולכן הסוכן לא ממשיך בלי החלטה.</small>
+          <div class="cmd"><i>$</i>apt-get install -y python3-tk</div></div></div>
+        <div class="ar after"><div class="ic" style="background:var(--okb)"><svg class="i"><use href="#ck"/></svg></div><div><b>אושר על ידך</b><small>הסוכן ממשיך להרצה מחדש.</small></div></div>
+        <div class="af"><button class="btn ok" onclick="approve()">אשר והמשך</button><button class="btn">ערוך פקודה</button><button class="btn">דחה והצע אחרת</button><button class="btn bad">עצור ריצה</button><small>ההחלטה נשמרת בהיסטוריה</small></div>
+      </div></div>
+
+      <details class="log"><summary>פלט הקונטיינר <span>reporunner-8f3a21</span></summary>
+<pre>[1/3] pip install -r requirements.txt
+Successfully installed pygame-2.5.2 numpy-1.26.4
+[2/3] python main.py
+Traceback (most recent call last):
+  File "main.py", line 3, in &lt;module&gt;
+    import tkinter
+ModuleNotFoundError: No module named 'tkinter'</pre></details>
+    </div>
+
+    <aside class="rail">
+      <div class="c"><h6>סוקרים</h6><div class="who"><div class="av">את</div>את<small>ממתינה לסקירה</small></div></div>
+      <div class="c"><h6>החלטות בטיחות</h6><div class="stats"><div><b style="color:var(--ok)" class="num">3</b><small>אוטומטי</small></div><div><b style="color:var(--att)" class="num">1</b><small>ממתין</small></div><div><b class="num">0</b><small>נחסם</small></div></div></div>
+      <div class="c"><h6>תגיות</h6><div class="lbs"><span class="lb" style="background:#1f6feb33;color:var(--acc)">python</span><span class="lb" style="background:#d2992225;color:var(--att)">needs-approval</span><span class="lb" style="background:#8957e533;color:var(--done)">attempt-2</span></div></div>
+      <div class="c"><h6>סביבה</h6><div class="kv"><span>Python</span><code>3.12</code></div><div class="kv"><span>קונטיינר</span><code>8f3a21</code></div><div class="kv"><span>מודל</span><code>gpt-5.4-mini</code></div><div class="kv"><span>גרסת סוכן</span><code>v1</code></div></div>
+      <div class="c"><h6>תוצרים</h6><div class="kv"><code>Dockerfile</code><span>טיוטה</span></div><div class="kv"><code>run.sh</code><span>בהמתנה</span></div><div class="kv"><code>REPORT.md</code><span>בהמתנה</span></div></div>
+      <div class="c"><h6>Pull request מקושר</h6><p>עדיין אין. אחרי אימות אפשר לפתוח PR עם ה-Dockerfile.</p><button class="btn" style="margin-top:12px;width:100%" disabled>פתח Pull request</button></div>
+    </aside>
+  </div>
+</main>
+
+<script>
+function approve(){
+  document.getElementById('page').classList.add('approved');
+  var b=document.getElementById('badge');b.className='badge run';document.getElementById('btx').textContent='רץ';
+}
+function toggle(){var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'}
+</script>
+</body>
+</html>

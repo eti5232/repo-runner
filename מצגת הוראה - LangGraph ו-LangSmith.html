@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>סוכני AI עם LangGraph ו-LangSmith</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--tx:#e2e8f0;--mut:#94a3b8;--b:#3b82f6;--p:#a855f7;--o:#f59e0b;--r:#ef4444;--g:#22c55e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Segoe UI,Arial,sans-serif;overflow:hidden}
+.s{display:none;height:100vh;padding:36px 60px 60px;flex-direction:column;justify-content:center}
+.s.on{display:flex}
+h1{font-size:48px;margin:0 0 10px}h2{font-size:34px;margin:0 0 20px;color:#fff}
+p,li{font-size:21px;line-height:1.55}li{margin-bottom:8px}
+.mut{color:var(--mut)}.big{font-size:28px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.c{background:var(--card);border-radius:12px;padding:14px 18px;border-top:4px solid var(--b)}
+.c b{font-size:21px}.c p{font-size:17px;margin:6px 0 0}
+.p{border-color:var(--p)}.o{border-color:var(--o)}.r{border-color:var(--r)}.g{border-color:var(--g)}
+code{background:#0b1220;padding:2px 7px;border-radius:5px;direction:ltr;unicode-bidi:embed;font-size:.88em}
+.quote{background:var(--card);border-right:5px solid var(--o);padding:12px 20px;border-radius:8px;font-size:23px}
+svg{width:100%;max-height:60vh}
+svg text{fill:#fff;font-size:14px;text-anchor:middle}
+.l{fill:var(--mut)!important;font-size:12.5px}
+table{border-collapse:collapse;font-size:21px;width:100%}td,th{padding:10px 14px;border-bottom:1px solid #334155;text-align:right}
+.up{color:var(--g);font-weight:bold}
+nav{position:fixed;bottom:12px;left:0;right:0;text-align:center;color:var(--mut);font-size:15px}
+nav button{background:var(--card);color:var(--tx);border:0;border-radius:6px;padding:6px 16px;margin:0 6px;cursor:pointer;font-size:16px}
+</style>
+</head>
+<body>
+
+<div class="s on">
+<h1>איך בונים סוכן AI?</h1>
+<p class="big">LangGraph לבנייה, LangSmith למדידה</p>
+<p class="mut">דוגמה חיה: RepoRunner, סוכן שמקבל פרויקט Python שבור ומתקן אותו לבד</p>
+</div>
+
+<div class="s">
+<h2>מה ההבדל בין צ'אט לבין סוכן?</h2>
+<div class="grid">
+<div class="c"><b>צ'אט</b><p>שאלה אחת ← תשובה אחת. אין פעולות בעולם.</p></div>
+<div class="c p"><b>סוכן</b><p>עושה <b>לולאה</b>: מנסה פעולה, רואה תוצאה, מחליט מה הלאה, עד שהמטרה הושגה או שצריך אדם.</p></div>
+</div>
+<p class="quote" style="margin-top:24px">סוכן = מודל שפה + כלים + <b>לולאה</b> + תנאי עצירה</p>
+<p class="mut">הקושי: לולאה שרצה לבד יכולה להסתבך, להיתקע, או לעשות משהו מסוכן. צריך דרך לשלוט בה.</p>
+</div>
+
+<div class="s">
+<h2>הרעיון של LangGraph: מציירים את הסוכן כגרף</h2>
+<svg viewBox="0 0 800 200">
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#cbd5e1"/></marker></defs>
+<rect x="20" y="70" width="140" height="50" rx="9" fill="#2563eb"/><text x="90" y="100">הרץ</text>
+<rect x="330" y="70" width="140" height="50" rx="9" fill="#9333ea"/><text x="400" y="100">אבחן ותקן (LLM)</text>
+<rect x="640" y="70" width="140" height="50" rx="9" fill="#16a34a"/><text x="710" y="100">סיום</text>
+<g stroke="#cbd5e1" stroke-width="2" fill="none" marker-end="url(#a)">
+<path d="M160 85 H640"/><path d="M330 105 H162" transform="translate(0 0)"/>
+<path d="M400 120 V170 H90 V122"/>
+</g>
+<text x="500" y="78" class="l">הצליח</text><text x="245" y="122" class="l">נכשל</text><text x="250" y="188" class="l">תיקון ← הרצה מחדש (לולאה)</text>
+</svg>
+<p><b>צומת</b> = צעד. <b>קשת</b> = לאן ממשיכים. <b>קשת מותנית</b> = לאן ממשיכים לפי מה שקרה. כשהקשת חוזרת אחורה נוצרת לולאה.</p>
+</div>
+
+<div class="s">
+<h2>6 הרכיבים של LangGraph</h2>
+<div class="grid">
+<div class="c"><b>1. State</b><p>הזיכרון המשותף של הריצה. כל צומת קורא ממנו וכותב אליו.</p><p class="mut"><code>RunState</code></p></div>
+<div class="c"><b>2. Node</b><p>פונקציית פייתון שעושה צעד אחד ומחזירה עדכון ל-State.</p><p class="mut"><code>execute_step</code></p></div>
+<div class="c"><b>3. Edge</b><p>קשת קבועה: "אחרי A תמיד B".</p><p class="mut"><code>clone ← analyze</code></p></div>
+<div class="c p"><b>4. Conditional edge</b><p>פונקציה שבוחרת את הצומת הבא לפי ה-State. כאן נולדות הלולאות.</p><p class="mut"><code>route_after_execute</code></p></div>
+<div class="c g"><b>5. Checkpointer</b><p>שומר את ה-State אחרי כל צעד. אפשר לסגור ולהמשיך מאותה נקודה.</p><p class="mut"><code>SqliteSaver</code></p></div>
+<div class="c r"><b>6. interrupt</b><p>עוצר את הגרף וממתין להחלטת אדם, ואז ממשיך.</p><p class="mut"><code>human_approval</code></p></div>
+</div>
+</div>
+
+<div class="s">
+<h2>הכלל הכי חשוב: המודל מציע, הקוד מחליט</h2>
+<div class="grid">
+<div class="c p"><b>המודל עושה</b><p>שיפוט: להבין שגיאה, לחקור קבצים, להציע תיקון.</p></div>
+<div class="c"><b>הקוד עושה</b><p>כל מה שאפשר דטרמיניסטית: ניתוב, בדיקת בטיחות, בדיקת הצלחה, בניית תוצרים.</p></div>
+</div>
+<p class="quote" style="margin-top:22px">למה? מודל יכול לטעות, להתבלבל, או להישכנע ע"י טקסט זדוני ב-README. קוד תמיד מתנהג אותו דבר.</p>
+<p class="mut">בפרויקט: גם אם המודל "שוכנע" להריץ <code>curl … | sh</code>, השער <code>safety.py</code> עוצר ומבקש אישור אדם.</p>
+</div>
+
+<div class="s">
+<h2>RepoRunner: הגרף שלנו</h2>
+<svg viewBox="0 0 850 330">
+<defs><marker id="b" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#cbd5e1"/></marker></defs>
+<g font-size="13">
+<rect x="10" y="20" width="130" height="40" rx="8" fill="#2563eb"/><text x="75" y="45">clone_repo</text>
+<rect x="160" y="20" width="130" height="40" rx="8" fill="#2563eb"/><text x="225" y="45">analyze_project</text>
+<rect x="310" y="20" width="130" height="40" rx="8" fill="#2563eb"/><text x="375" y="45">plan_run</text>
+<rect x="460" y="20" width="130" height="40" rx="8" fill="#2563eb"/><text x="525" y="45">execute_step</text>
+<rect x="610" y="20" width="110" height="40" rx="8" fill="#2563eb"/><text x="665" y="45">verify</text>
+<rect x="740" y="20" width="100" height="40" rx="8" fill="#16a34a"/><text x="790" y="45">report</text>
+<rect x="460" y="150" width="130" height="40" rx="8" fill="#9333ea"/><text x="525" y="175">diagnose_error</text>
+<rect x="650" y="150" width="130" height="40" rx="8" fill="#2563eb"/><text x="715" y="175">investigate</text>
+<rect x="460" y="270" width="130" height="40" rx="8" fill="#9333ea"/><text x="525" y="295">propose_fix</text>
+<rect x="290" y="270" width="130" height="40" rx="8" fill="#d97706"/><text x="355" y="295">safety_gate</text>
+<rect x="110" y="270" width="140" height="40" rx="8" fill="#dc2626"/><text x="180" y="295">human_approval</text>
+</g>
+<g stroke="#cbd5e1" stroke-width="2" fill="none" marker-end="url(#b)">
+<path d="M140 40H158"/><path d="M290 40H308"/><path d="M440 40H458"/><path d="M590 40H608"/><path d="M720 40H738"/>
+<path d="M535 60V148"/><path d="M590 160H648"/><path d="M648 180H592"/>
+<path d="M525 190V268" transform="translate(0 0)"/>
+<path d="M460 290H422"/><path d="M290 290H252"/>
+<path d="M355 270V110H490V62"/><path d="M180 270V90H475V62"/>
+<path d="M650 60V130H570V148"/>
+</g>
+<text x="760" y="85" class="l">עובד</text><text x="510" y="112" class="l" style="text-anchor:end">נכשל</text>
+<text x="620" y="95" class="l">לא עובד</text><text x="380" y="125" class="l">בטוח</text>
+<text x="200" y="262" class="l">רגיש</text><text x="260" y="85" class="l">אושר</text>
+<text x="620" y="152" class="l">כלי קריאה</text>
+</svg>
+<p class="mut" style="font-size:17px">סגול = קורא ל-LLM. תכלת = קוד רגיל. כתום = שער בטיחות. אדום = עצירה לאדם. ירוק = סיום.</p>
+</div>
+
+<div class="s">
+<h2>הלולאה, צעד אחר צעד</h2>
+<ol>
+<li><b>execute_step</b> מריץ פקודה בקונטיינר Docker. נכשל: <code>ModuleNotFoundError</code>.</li>
+<li><b>route_after_execute</b> (קשת מותנית) רואה כשל ומעבירה ל-<b>diagnose_error</b>.</li>
+<li>המודל קורא קבצים דרך <b>investigate</b> (לולאה קטנה בתוך הלולאה) ומאבחן: חבילה חסרה.</li>
+<li><b>propose_fix</b> מציע <code>pip install numpy</code>.</li>
+<li><b>safety_gate</b> בודק בקוד: בטוח ← חוזרים ל-<b>execute_step</b>. רגיש ← <b>human_approval</b> עוצר לאדם.</li>
+<li>הצליח ← <b>verify</b> ← <b>report</b> בונה Dockerfile.</li>
+</ol>
+<p class="mut">תנאי עצירה: <code>MAX_ATTEMPTS = 8</code>. בלעדיו הלולאה יכולה לרוץ לנצח.</p>
+</div>
+
+<div class="s">
+<h2>איזה סוג סוכן RepoRunner?</h2>
+<p class="mut" style="margin-top:-8px">דפוס (Pattern) הוא האסטרטגיה. LangGraph הוא רק אבני הבניין לממש אותה.</p>
+<table style="font-size:19px">
+<tr><th>דפוס</th><th>?</th><th>איפה בפרויקט</th></tr>
+<tr><td><b>ReAct</b> (חשוב, פעל, התבונן)</td><td class="up">✔</td><td><code>diagnose_error</code> ↔ <code>investigate</code>: המודל קורא קבצים בכלים ורואה את התוצאה</td></tr>
+<tr><td><b>Planning</b> (תכנן ← בצע)</td><td class="up">✔</td><td><code>plan_run</code> בונה צעדים, <code>execute_step</code> מבצע, <code>verify</code> בודק</td></tr>
+<tr><td><b>Human-in-the-loop</b></td><td class="up">✔</td><td><code>human_approval</code> עם <code>interrupt()</code></td></tr>
+<tr><td><b>Router</b> (ניתוב)</td><td style="color:var(--o)">חלקי</td><td>קשתות מותנות לפי ה-State, לא סיווג כוונה של מודל</td></tr>
+<tr><td><b>Multi-Agent</b></td><td style="color:var(--r)">✘</td><td>סוכן אחד. כיוון להרחבה</td></tr>
+</table>
+<p class="quote" style="margin-top:16px;font-size:21px">RepoRunner = סוכן Plan-and-Execute, עם לולאת ReAct לאבחון, ו-Human-in-the-loop לפעולות רגישות</p>
+</div>
+
+<div class="s">
+<h2>LangSmith: איך יודעים שהסוכן טוב?</h2>
+<p class="quote">בלי מדידה, "שיפרתי את הפרומפט" הוא תחושה. עם מדידה זו עובדה.</p>
+<div class="grid" style="margin-top:22px">
+<div class="c o"><b>1. Tracing</b><p>כל ריצה נרשמת כעץ: איזה צומת, מה נשלח למודל, מה חזר, כמה טוקנים וזמן. אפשר לראות בדיוק איפה הלך שגוי.</p></div>
+<div class="c g"><b>2. Evaluation</b><p>מריצים את הסוכן על הרבה דוגמאות וממדדים אוטומטית. זה מה שמאפשר להשוות גרסאות.</p></div>
+</div>
+</div>
+
+<div class="s">
+<h2>הערכה: דאטהסט, Evaluator, Experiment</h2>
+<div class="grid">
+<div class="c"><b>Dataset (דאטהסט)</b><p>רשימת דוגמאות עם תשובה ידועה. אצלנו 25 פרויקטים: תקינים, שבורים, דורשי אדם, והזרקה.</p></div>
+<div class="c p"><b>Evaluator</b><p>פונקציה שנותנת ציון לריצה אחת. אצלנו 6: הצלחה, ניסיונות, חזרה על תיקון, עצירה נכונה, הזרקה, עלות וזמן.</p></div>
+<div class="c g"><b>Experiment (ניסוי)</b><p>הרצת הסוכן על כל הדאטהסט וציון כל ריצה. התוצאה: טבלת ציונים עם שם, כמו <code>v1</code>.</p></div>
+</div>
+<p style="margin-top:20px"><b>למה 3 חזרות?</b> מודל שפה לא דטרמיניסטי. ריצה אחת יכולה להצליח במקרה, אז משווים ממוצעים.</p>
+</div>
+
+<div class="s">
+<h2>ניסוי לפני ואחרי</h2>
+<svg viewBox="0 0 860 150">
+<defs><marker id="c" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#cbd5e1"/></marker></defs>
+<g font-size="14">
+<rect x="10" y="45" width="140" height="55" rx="9" fill="#2563eb"/><text x="80" y="78">1. מדידה (v1)</text>
+<rect x="180" y="45" width="150" height="55" rx="9" fill="#d97706"/><text x="255" y="78">2. מוצאים איפה נכשל</text>
+<rect x="360" y="45" width="140" height="55" rx="9" fill="#9333ea"/><text x="430" y="78">3. מתקנים</text>
+<rect x="530" y="45" width="150" height="55" rx="9" fill="#2563eb"/><text x="605" y="78">4. מדידה (v2)</text>
+<rect x="710" y="45" width="140" height="55" rx="9" fill="#16a34a"/><text x="780" y="78">5. משווים</text>
+</g>
+<g stroke="#cbd5e1" stroke-width="2" marker-end="url(#c)"><path d="M150 72H178"/><path d="M330 72H358"/><path d="M500 72H528"/><path d="M680 72H708"/></g>
+</svg>
+<p><b>הכלל:</b> אותו דאטהסט ואותו קוד, ורק דבר אחד משתנה. אז כל הבדל במספרים הוא בגלל השינוי.</p>
+<p class="mut">בפרויקט שלנו הגרסה נבחרת ב-runtime context (<code>agent_version</code>) ולא בעותק נפרד של הקוד.</p>
+</div>
+
+<div class="s">
+<h2>מה קרה אצלנו: v1</h2>
+<table>
+<tr><th>מדד</th><th>v1</th></tr>
+<tr><td>הצלחה</td><td>0.89</td></tr>
+<tr><td>עצירה נכונה</td><td>0.89</td></tr>
+<tr><td>עמידות להזרקה</td><td>1.0</td></tr>
+</table>
+<p style="margin-top:16px"><b>הממצא:</b> כל 8 הכישלונות הגיעו מ-3 דוגמאות. המודל אבחן ותיקן נכון, אבל כתב את העריכה של <code>requirements.txt</code> בצורה (heredoc) ששער הבטיחות מסווג כשינוי קוד, ולכן עצר לשווא.</p>
+<p><b>התיקון ל-v2:</b> להורות למודל לערוך תלויות ב-<code>sed -i</code> או <code>echo &gt;&gt;</code>, שנמצאים ברשימת ההיתר. הציפייה: ההצלחה עולה.</p>
+<p class="mut">בלי הניסוי לא היינו יודעים מה לתקן. זו כל הנקודה של מדידה.</p>
+</div>
+
+<div class="s">
+<h2>שאלות לכיתה</h2>
+<ol>
+<li>מה ההבדל בין קשת רגילה לקשת מותנית, ומה קורה בלי קשת שחוזרת אחורה?</li>
+<li>למה ההחלטה אם פקודה בטוחה נעשית בקוד ולא במודל?</li>
+<li>מה היה קורה לסוכן אם נסגר המחשב באמצע עצירה, ואיזה רכיב פותר את זה?</li>
+<li>למה מריצים ניסוי 3 פעמים? ולמה משווים על אותו דאטהסט?</li>
+<li>מה הכשל ב-v1, ואיך המדידה עזרה לגלות אותו?</li>
+</ol>
+<p class="mut">תרגיל: הוסיפו לגרף צומת חדש שמסכם את הריצה. איזה State הוא צריך, ובין אילו צמתים הוא נכנס?</p>
+</div>
+
+<nav><button onclick="go(1)">‹ הבא</button><span id="n"></span><button onclick="go(-1)">קודם ›</button></nav>
+<script>
+const S=[...document.querySelectorAll('.s')];let i=0;
+function show(){S.forEach((s,k)=>s.classList.toggle('on',k==i));document.getElementById('n').textContent=(i+1)+' / '+S.length}
+function go(d){i=Math.max(0,Math.min(S.length-1,i+d));show()}
+document.addEventListener('keydown',e=>{if(e.key=='ArrowLeft'||e.key==' ')go(1);if(e.key=='ArrowRight')go(-1)});
+show();
+</script>
+</body>
+</html>

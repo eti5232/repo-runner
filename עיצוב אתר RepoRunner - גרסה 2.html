@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RepoRunner</title>
+<style>
+:root{
+  --bg:#0c0d0f; --panel:#141619; --panel2:#1a1d21; --line:#25282d; --tx:#f1efe9; --mut:#8d9197;
+  --acc:#ff6b3d; --ok:#5fd0a0; --warn:#f2b84b; --mono:Consolas,"Cascadia Mono","SF Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font-family:"Segoe UI","Arial Hebrew",Arial,sans-serif;font-size:17px;line-height:1.6}
+code,.mono{font-family:var(--mono);direction:ltr;unicode-bidi:embed}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 32px}
+button{font:inherit;cursor:pointer}
+
+/* ניווט */
+nav{position:sticky;top:0;z-index:20;background:#0c0d0fe6;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:68px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
+.logo i{width:26px;height:26px;border-radius:7px;background:var(--acc);display:grid;place-items:center}
+.logo i::after{content:"";width:10px;height:10px;border:2.5px solid #0c0d0f;border-radius:50%;border-inline-start-color:transparent}
+.links{display:flex;gap:34px;color:var(--mut);font-size:15px}
+.links a:hover{color:var(--tx)}
+.btn{background:var(--acc);color:#1a0d07;border:0;border-radius:10px;padding:11px 24px;font-weight:700}
+.btn:hover{background:#ff8259}
+.btn.sm{padding:8px 18px;font-size:15px}
+.btn.line{background:none;color:var(--tx);border:1px solid #3a3e44;font-weight:600}
+.btn.line:hover{border-color:#6b6f76}
+
+/* גיבור */
+.hero{position:relative;padding:84px 0 70px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:64px 64px;opacity:.28;mask-image:radial-gradient(ellipse 70% 70% at 30% 40%,#000,transparent);-webkit-mask-image:radial-gradient(ellipse 70% 70% at 30% 40%,#000,transparent)}
+.hero .wrap{position:relative;display:grid;grid-template-columns:1fr 1.1fr;gap:50px;align-items:center}
+.eyebrow{font-family:var(--mono);font-size:13px;color:var(--acc);letter-spacing:1.5px;direction:ltr;text-align:right;margin-bottom:18px}
+h1{font-size:60px;line-height:1.08;letter-spacing:-1.5px;font-weight:800}
+h1 em{font-style:normal;color:var(--acc)}
+.sub{color:var(--mut);font-size:19px;margin:22px 0 34px;max-width:480px}
+.cta{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:7px;gap:8px}
+.cta input{flex:1;min-width:0;background:none;border:0;color:var(--tx);font-family:var(--mono);font-size:14px;padding:0 14px;outline:none;direction:ltr;text-align:left}
+.cta .btn{padding:13px 24px;white-space:nowrap}
+.note{font-size:13.5px;color:var(--mut);margin-top:14px}
+.frame{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 30px 80px #0008}
+.frame .bar{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--mut);padding:2px 6px 12px;direction:ltr}
+.frame .live{color:var(--ok)}
+.frame .live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-inline-end:7px;animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.2}}
+svg{display:block;width:100%;height:auto}
+.n rect{fill:var(--panel2);stroke:#33373d;stroke-width:1.2}
+.n text{fill:var(--tx);font-family:var(--mono);font-size:13px;text-anchor:middle}
+.n.llm rect{stroke:var(--acc)}
+.n.gate rect{stroke:var(--warn)}
+.n.hum rect{stroke:var(--warn);fill:#2a2314}
+.n.ok rect{stroke:var(--ok)}
+.n.pulse rect{animation:pulse 2.4s infinite}
+@keyframes pulse{50%{stroke:var(--acc);filter:drop-shadow(0 0 8px #ff6b3d99)}}
+.e{fill:none;stroke:#3d4148;stroke-width:1.6;stroke-dasharray:5 5;animation:flow 1.2s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-20}}
+.cap{fill:var(--mut);font-size:11.5px;text-anchor:middle}
+
+/* פס */
+.strip{border-block:1px solid var(--line);padding:20px 0;color:var(--mut);font-size:15px}
+.strip .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.strip span::before{content:"+ ";color:var(--acc);font-family:var(--mono)}
+
+/* קטעים */
+section{padding:96px 0}
+.kick{font-family:var(--mono);color:var(--acc);font-size:13px;letter-spacing:1.5px;margin-bottom:14px;direction:ltr;text-align:right}
+h2{font-size:40px;line-height:1.15;letter-spacing:-.8px;font-weight:800;max-width:700px}
+.lead{color:var(--mut);max-width:560px;margin-top:16px;font-size:18px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:50px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px}
+.step b.num{font-family:var(--mono);color:var(--acc);font-size:14px}
+.step h3{font-size:22px;margin:10px 0 8px}
+.step p{color:var(--mut);font-size:15.5px}
+.mini{margin-top:22px;background:#0a0b0d;border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;line-height:1.7;direction:ltr;text-align:left;color:#c9c5b9}
+.r{color:#ef7b6e}.g{color:var(--ok)}.y{color:var(--warn)}.m{color:#6f737a}
+
+/* קונסולה */
+.console{margin-top:46px;background:var(--panel);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:grid;grid-template-columns:300px 1fr}
+.tl{padding:26px;border-inline-end:1px solid var(--line)}
+.tl h4{font-family:var(--mono);font-size:12px;letter-spacing:1.4px;color:var(--mut);margin-bottom:20px;direction:ltr;text-align:right}
+.tl ol{list-style:none}
+.tl li{display:flex;gap:13px;padding-bottom:18px;position:relative;font-size:15px}
+.tl li::before{content:"";position:absolute;inset-inline-start:8px;top:22px;bottom:2px;width:1.5px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl i{width:18px;height:18px;border-radius:50%;border:2px solid #3a3e44;flex:none;margin-top:3px;position:relative;z-index:1;background:var(--panel)}
+.tl .d i{background:var(--ok);border-color:var(--ok)}
+.tl .x i{background:#ef5a4a;border-color:#ef5a4a}
+.tl .w i{background:var(--warn);border-color:var(--warn);box-shadow:0 0 0 5px #f2b84b30}
+.tl small{display:block;color:var(--mut);font-size:13px;line-height:1.4}
+.main{padding:26px;display:flex;flex-direction:column;gap:18px}
+.out{background:#0a0b0d;border-radius:12px;padding:16px 18px;font-family:var(--mono);font-size:13px;line-height:1.8;direction:ltr;text-align:left;color:#c9c5b9}
+.appr{border:1.5px solid #6e5420;background:#1c1810;border-radius:16px;padding:22px}
+.appr .t{display:flex;align-items:center;gap:10px;color:var(--warn);font-weight:700;font-size:14px;letter-spacing:.3px}
+.appr h3{font-size:22px;margin:8px 0 4px}
+.appr p{color:#b3a98f;font-size:15px}
+.appr .cmd{background:#0a0b0d;border-radius:9px;padding:11px 14px;margin:14px 0;font-family:var(--mono);font-size:14px;direction:ltr;text-align:left}
+.appr .cmd span{color:var(--warn)}
+.acts{display:flex;gap:10px;flex-wrap:wrap}
+
+/* בטיחות */
+.safe{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:46px}
+.col{border-radius:18px;padding:28px;border:1px solid var(--line);background:var(--panel)}
+.col h3{display:flex;align-items:center;gap:10px;font-size:20px;margin-bottom:18px}
+.col h3::before{content:"";width:10px;height:10px;border-radius:50%}
+.col.a h3::before{background:var(--ok)}.col.b{border-color:#6e5420;background:#16130c}.col.b h3::before{background:var(--warn)}
+.col li{list-style:none;padding:11px 0;border-top:1px solid #ffffff12;color:#cfcbc0;font-size:15.5px}
+.col li:first-of-type{border:0}
+.col code{background:#0a0b0d;border-radius:5px;padding:2px 7px;font-size:13px}
+.rule{margin-top:20px;color:var(--mut);font-size:15.5px;max-width:720px}
+
+/* מספרים */
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:46px}
+.num{border-top:2px solid var(--acc);padding-top:20px}
+.num b{font-size:72px;line-height:1;letter-spacing:-2px;font-weight:800;display:block}
+.num span{color:var(--mut);font-size:15.5px;display:block;margin-top:10px}
+.foot{border-top:1px solid var(--line);padding:70px 0;text-align:center}
+.foot h2{margin:0 auto 26px;max-width:620px}
+.copy{color:var(--mut);font-size:13.5px;margin-top:40px}
+@media(max-width:960px){.hero .wrap,.steps,.console,.safe,.nums{grid-template-columns:1fr}h1{font-size:42px}.links{display:none}.tl{border:0;border-bottom:1px solid var(--line)}}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="logo" href="#"><i></i>RepoRunner</a>
+  <div class="links"><a href="#how">איך זה עובד</a><a href="#live">ריצה חיה</a><a href="#safety">בטיחות</a><a href="#results">תוצאות</a></div>
+  <button class="btn sm">נסי עכשיו</button>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div>
+    <div class="eyebrow">AUTONOMOUS ENVIRONMENT REPAIR</div>
+    <h1>הפרויקט לא רץ?<br><em>הסוכן יגרום לו לרוץ.</em></h1>
+    <p class="sub">הדביקי קישור לפרויקט Python. הסוכן מריץ אותו בקונטיינר מבודד, מבין מה נשבר, מתקן, ומחזיר Dockerfile שעובד.</p>
+    <div class="cta"><input value="https://github.com/user/snake-q-learning" aria-label="קישור"><button class="btn">הפעל את הסוכן</button></div>
+    <p class="note">פעולות רגישות תמיד עוצרות לאישור שלך.</p>
+  </div>
+
+  <div class="frame">
+    <div class="bar"><span>reporunner-8f3a21</span><span class="live">RUNNING · ATTEMPT 2/8</span></div>
+    <svg viewBox="0 0 700 380" aria-label="גרף הסוכן">
+      <defs><marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0L7,3.5L0,7z" fill="#5a5f66"/></marker></defs>
+      <g class="e" marker-end="url(#ar)">
+        <path d="M130 52H148"/><path d="M270 52H288"/><path d="M410 52H428"/><path d="M550 52H568"/>
+        <path d="M350 74V168"/><path d="M410 182H458"/><path d="M458 204H412"/>
+        <path d="M350 214V298"/><path d="M290 320H272"/><path d="M150 320H132"/>
+        <path d="M210 298V122H322V76"/><path d="M70 298V100H302V76"/><path d="M490 74V130H382V168"/>
+      </g>
+      <g class="n">
+        <g><rect x="10" y="30" width="120" height="44" rx="10"/><text x="70" y="57">clone_repo</text></g>
+        <g><rect x="150" y="30" width="120" height="44" rx="10"/><text x="210" y="57">plan_run</text></g>
+        <g class="pulse"><rect x="290" y="30" width="120" height="44" rx="10"/><text x="350" y="57">execute_step</text></g>
+        <g><rect x="430" y="30" width="120" height="44" rx="10"/><text x="490" y="57">verify</text></g>
+        <g class="ok"><rect x="570" y="30" width="120" height="44" rx="10"/><text x="630" y="57">report</text></g>
+        <g class="llm"><rect x="290" y="170" width="120" height="44" rx="10"/><text x="350" y="197">diagnose_error</text></g>
+        <g><rect x="460" y="170" width="120" height="44" rx="10"/><text x="520" y="197">investigate</text></g>
+        <g class="llm"><rect x="290" y="298" width="120" height="44" rx="10"/><text x="350" y="325">propose_fix</text></g>
+        <g class="gate"><rect x="150" y="298" width="120" height="44" rx="10"/><text x="210" y="325">safety_gate</text></g>
+        <g class="hum"><rect x="10" y="298" width="120" height="44" rx="10"/><text x="70" y="325">human_approval</text></g>
+      </g>
+      <circle r="5" fill="#ff6b3d"><animateMotion dur="7s" repeatCount="indefinite" path="M70 52H630"/></circle>
+      <circle r="5" fill="#f2b84b"><animateMotion dur="5s" repeatCount="indefinite" path="M350 74V320H210V122H322V74"/></circle>
+      <text x="470" y="125" class="cap">לא עובד</text><text x="290" y="145" class="cap" style="text-anchor:end">נכשל</text>
+      <text x="170" y="290" class="cap">בטוח</text><text x="140" y="360" class="cap">רגיש ← אדם</text>
+    </svg>
+  </div>
+</div></header>
+
+<div class="strip"><div class="wrap">
+  <span>חבילה חסרה</span><span>התנגשות גרסאות</span><span>ספריית מערכת</span><span>משתנה סביבה</span><span>גרסת Python</span><span>קובץ הגדרות חסר</span>
+</div></div>
+
+<section id="how"><div class="wrap">
+  <div class="kick">HOW IT WORKS</div>
+  <h2>שלושה צעדים, בלי לנחש מה חסר</h2>
+  <p class="lead">הסוכן לא מסתפק בניחוש של מודל. כל תיקון נבדק בהרצה אמיתית.</p>
+  <div class="steps">
+    <div class="step"><b class="num">01</b><h3>מריץ ומאבחן</h3><p>מריץ צעד אחר צעד, וכשמשהו נשבר קורא קבצים כדי להבין למה.</p>
+      <div class="mini"><span class="m">$</span> python main.py<br><span class="r">ModuleNotFoundError: numpy</span><br><span class="y">אבחון: חבילה חסרה</span></div></div>
+    <div class="step"><b class="num">02</b><h3>מתקן בבטיחות</h3><p>תיקון בטוח רץ לבד. תיקון רגיש ממתין להחלטה שלך.</p>
+      <div class="mini"><span class="m">$</span> pip install numpy<br><span class="g">✓ בטוח, מופעל אוטומטית</span></div></div>
+    <div class="step"><b class="num">03</b><h3>מחזיר תוצר</h3><p>Dockerfile, סקריפט הרצה ודוח של כל מה שהשתנה.</p>
+      <div class="mini"><span class="g">✓ verify עבר</span><br>Dockerfile · run.sh · report.md</div></div>
+  </div>
+</div></section>
+
+<section id="live" style="padding-top:20px"><div class="wrap">
+  <div class="kick">LIVE RUN</div>
+  <h2>את רואה הכול, ומחליטה ברגעים שחשובים</h2>
+  <div class="console">
+    <div class="tl">
+      <h4>PROGRESS</h4>
+      <ol>
+        <li class="d"><i></i><div>שכפול וניתוח<small>requirements.txt נמצא</small></div></li>
+        <li class="d"><i></i><div>התקנת תלויות<small>pip install הצליח</small></div></li>
+        <li class="x"><i></i><div>הרצה נכשלה<small>No module named tkinter</small></div></li>
+        <li class="d"><i></i><div>אבחון<small>ספריית מערכת חסרה</small></div></li>
+        <li class="w"><i></i><div>ממתין לאישור<small>פעולה רגישה</small></div></li>
+        <li><i></i><div>אימות והפקת תוצר<small>בהמתנה</small></div></li>
+      </ol>
+    </div>
+    <div class="main">
+<div class="out"><span class="m">[2/3]</span> python main.py
+<span class="r">Traceback (most recent call last):
+  File "main.py", line 3, in &lt;module&gt;
+    import tkinter
+ModuleNotFoundError: No module named 'tkinter'</span>
+<span class="y">diagnose</span> → system library missing
+<span class="y">safety_gate</span> → sensitive, waiting for human</div>
+      <div class="appr">
+        <div class="t">● ממתין לאישור שלך</div>
+        <h3>הסוכן מבקש להתקין ספריית מערכת</h3>
+        <p>הפקודה משנה את המערכת, ולכן היא לא רצה בלי אישור.</p>
+        <div class="cmd"><span>$</span> apt-get install -y python3-tk</div>
+        <div class="acts"><button class="btn sm">אשר והמשך</button><button class="btn sm line">ערוך</button><button class="btn sm line">דחה</button><button class="btn sm line">עצור</button></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section id="safety" style="padding-top:20px"><div class="wrap">
+  <div class="kick">SAFETY</div>
+  <h2>המודל מציע. הקוד מחליט.</h2>
+  <div class="safe">
+    <div class="col a"><h3>רץ אוטומטית</h3><ul><li><code>pip install</code> ו-<code>python -m</code></li><li>עריכת <code>requirements.txt</code></li><li>משתני סביבה רגילים</li><li>החלפת גרסת Python</li></ul></div>
+    <div class="col b"><h3>מחכה לאישור שלך</h3><ul><li><code>apt</code>, <code>sudo</code>, <code>curl | sh</code></li><li>שינוי קוד מקור</li><li>משתנה שנראה כמו סוד</li><li>הגעה למגבלת הניסיונות</li></ul></div>
+  </div>
+  <p class="rule">גם אם README זדוני ישכנע את המודל להריץ פקודה מסוכנת, כללי הבטיחות רצים בקוד קבוע ולא תלויים במודל. סודות נכתבים ישירות לקונטיינר ולא נשמרים בזיכרון הסוכן.</p>
+</div></section>
+
+<section id="results" style="padding-top:20px"><div class="wrap">
+  <div class="kick">RESULTS · EXPERIMENT V1</div>
+  <h2>מדידה, לא תחושה</h2>
+  <p class="lead">25 פרויקטים, 3 חזרות כל אחד, נמדדו אוטומטית ב-LangSmith.</p>
+  <div class="nums">
+    <div class="num"><b>89%</b><span>מהריצות הסתיימו בהצלחה</span></div>
+    <div class="num"><b>89%</b><span>עצירה נכונה כשנדרש אדם</span></div>
+    <div class="num"><b>100%</b><span>עמידות לניסיון הזרקת פרומפט</span></div>
+  </div>
+</div></section>
+
+<div class="foot"><div class="wrap">
+  <h2>הפרויקט הבא שלך כבר יכול לרוץ</h2>
+  <button class="btn">הפעל את הסוכן</button>
+  <p class="copy">RepoRunner · LangGraph + Docker + LangSmith</p>
+</div></div>
+
+</body>
+</html>
