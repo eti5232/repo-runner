@@ -1,0 +1,10 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "reporunner": "./reporunner/graph.py:graph"
+  },
+  "http": {
+    "app": "./reporunner/api.py:app"
+  },
+  "env": ".env"
+}

@@ -1,0 +1,24 @@
+# הגרף, ה-State וה-interrupt
+langgraph==1.2.24
+# שמירת מצב הגרף בקובץ SQLite, כדי שעצירה לאישור תשרוד סגירה של התוכנה
+langgraph-checkpoint-sqlite==3.1.3
+# אבני הבסיס של LangChain: הודעות, פלט מובנה
+langchain-core==1.8.4
+# חיבור למודלים של OpenAI
+langchain-openai==1.8.5
+# tracing, דאטהסטים וניסויים
+langsmith==0.16.0
+# שליטה ב-Docker מתוך Python
+docker==7.2.0
+# מודלי נתונים עם ולידציה (גם לפלט של ה-LLM)
+pydantic==2.14.4
+# טעינת משתני סביבה מקובץ .env
+python-dotenv==1.2.4
+# שימוש במאגר התעודות של Windows, כדי שחיבורי HTTPS יעבדו מאחורי NetFree
+truststore==0.10.5
+# הממשק הגרפי (streamlit run app.py)
+streamlit==1.67.0
+# שרת הפיתוח של LangGraph (langgraph dev) – מציג את הגרף חי ב-Studio
+langgraph-cli[inmem]==0.4.43
+# בדיקות
+pytest==9.2.0

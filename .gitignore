@@ -1,0 +1,24 @@
+# סודות: לא עולים לגיט לעולם
+.env
+.env.*
+!.env.example
+
+# סביבות ותלויות (נבנות מחדש בהתקנה)
+.venv/
+node_modules/
+
+# תוצרי ריצה מקומיים
+.reporunner/
+.langgraph_api/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.sqlite*
+frontend/dist/
+.shots/
+
+# קבצים שלא שייכים לפרויקט (נשארים במחשב)
+MergeMind*.docx
+אפיון שלושה סוכני AI.pptx
+פרויקט הגשה 2.docx
+~$*
