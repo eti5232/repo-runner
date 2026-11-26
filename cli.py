@@ -25,6 +25,7 @@ RISK_LABELS = {
     "secret": "הגדרת סוד",
     "code_change": "שינוי בקוד המקור",
     "custom_source": "התקנה ממקור מותאם",
+    "repeated": "תיקון שכבר נוסה ולא פתר",
     "outside": "פעולה מחוץ לתיקיית הפרויקט",
     "unrecognized": "פקודה שלא זוהתה",
 }

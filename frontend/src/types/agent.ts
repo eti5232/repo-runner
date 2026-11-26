@@ -22,7 +22,8 @@ export type RiskKind =
   | "code_change"
   | "custom_source"
   | "outside"
-  | "unrecognized";
+  | "unrecognized"
+  | "repeated";
 
 export type Step = {
   command: string;

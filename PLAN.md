@@ -22,7 +22,7 @@
 
 **M7 לביצוע:**
 1. ✔ מנגנון בחירת גרסה ב-runtime context (`agent_version`, `reporunner/context.py`), **v1 נשמר בדיוק כמו עכשיו** (ברירת מחדל). נבדק בבדיקות. האתר מפעיל v2; `run_experiment` מפעיל לפי `--label` (v2*) או v1.
-2. שיפורי v2: (א) ✔ הנחיה להעדיף פקודות קצרות בשורה אחת (`sed -i`, `echo >>`) ולא heredoc (`FIX_SYSTEM_V2`). בבדיקה על np-test: 2 ניסיונות במקום 9; (ב) להעביר את `attempt_history` לפרומפטים של אבחון ותיקון; (ג) לחסום תיקון שכבר נכשל.
+2. שיפורי v2: (א) ✔ הנחיה להעדיף פקודות קצרות בשורה אחת (`sed -i`, `echo >>`) ולא heredoc (`FIX_SYSTEM_V2`). בבדיקה על np-test: 2 ניסיונות במקום 9; (ב) ✔ `attempt_history` בפרומפטים של אבחון ותיקון; (ג) ✔ חסימת תיקון שכבר נכשל (`memory.py`; אם עדיין חוזר, עובר לאדם).
 3. ניסוי v2 על אותו דאטהסט (3 חזרות, כ-20 דקות; `python -m evaluation.run_experiment --label v2`), והשוואה ל-v1.
 4. README עם צילומי trace (דורש התחברות של המשתמשת ל-LangSmith) ותובנה אחת.
 5. עדכון ההצעה והמצגת: הן עדיין אומרות "11 צמתים" ו-Streamlit בנוסח ישן; בפועל יש 13 צמתים, כולל `investigate`, `switch_python`, `safety_gate`, `human_approval`, `apply_fix`.

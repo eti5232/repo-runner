@@ -119,7 +119,7 @@ class Attempt(BaseModel):
 class Risk(BaseModel):
     """סיבה אחת לכך שפקודת תיקון דורשת אישור אדם."""
 
-    kind: Literal["system", "remote_script", "secret", "code_change", "custom_source", "outside", "unrecognized"]
+    kind: Literal["system", "remote_script", "secret", "code_change", "custom_source", "outside", "unrecognized", "repeated"]
     command: str
 
 

@@ -7,9 +7,9 @@ from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langgraph.runtime import Runtime
 from langgraph.types import interrupt
 
-from reporunner import artifacts, config, display, entrypoint, prompts, safety
+from reporunner import artifacts, config, display, entrypoint, memory, prompts, safety
 from reporunner.context import RunContext, version_of
-from reporunner.models import Approval, Attempt, Diagnosis, Fix, ProjectProfile, Step, SuccessCheck
+from reporunner.models import Approval, Attempt, Diagnosis, Fix, ProjectProfile, Risk, Step, SuccessCheck
 from reporunner.sandbox import Sandbox
 from reporunner.state import RunState
 from reporunner.tools import INVESTIGATION_TOOLS
@@ -184,7 +184,10 @@ def diagnose_error(state: RunState, runtime: Runtime[RunContext]) -> dict:
     )
 
     history = state.get("messages", [])
-    opening = [] if history else [HumanMessage(prompts.failure_report(state))]
+    report_text = prompts.failure_report(state)
+    if version_of(runtime.context) == "v2":  # v2: המודל יודע מה כבר נוסה
+        report_text += memory.history_text(state.get("attempt_history", []))
+    opening = [] if history else [HumanMessage(report_text)]
     response = llm.invoke([SystemMessage(prompts.diagnose_system(version_of(runtime.context))), *history, *opening])
 
     update: dict = {"messages": [*opening, response]}
@@ -203,7 +206,17 @@ def propose_fix(state: RunState, runtime: Runtime[RunContext]) -> dict:
     3. עושה: המודל מציע פקודות תיקון, והניסיון נרשם. לא נוגעת בתוכנית: זה תפקיד apply_fix, אחרי שער הבטיחות.
     """
     llm = ChatOpenAI(model=config.OPENAI_MODEL).with_structured_output(Fix)
-    fix = llm.invoke([SystemMessage(prompts.fix_system(version_of(runtime.context))), HumanMessage(prompts.fix_request(state))])
+    version = version_of(runtime.context)
+    tried = state.get("attempt_history", [])
+    request = prompts.fix_request(state) + (memory.history_text(tried) if version == "v2" else "")
+    messages = [SystemMessage(prompts.fix_system(version)), HumanMessage(request)]
+    fix = llm.invoke(messages)
+    if version == "v2":  # תיקון שכבר נכשל נחסם ומוחזר למודל עם הסבר
+        for _ in range(config.REPEAT_RETRIES):
+            if not memory.is_repeat(fix.commands, tried):
+                break
+            messages = [*messages, HumanMessage(memory.repeat_message(fix.commands))]
+            fix = llm.invoke(messages)
 
     attempt = Attempt(
         number=state.get("attempts", 0) + 1,
@@ -255,13 +268,19 @@ def switch_python(state: RunState) -> dict:
 
 # ---------- 2.6 בטיחות ואישור אדם ----------
 
-def safety_gate(state: RunState) -> dict:
+def safety_gate(state: RunState, runtime: Runtime[RunContext]) -> dict:
     """
-    1. מקבלת: state (עם proposed_fix).
+    1. מקבלת: state (עם proposed_fix ו-attempt_history) ו-runtime (גרסת הסוכן).
     2. מחזירה: {fix_risks}: רשימת סיכונים, ריקה אם הכול בטוח.
-    3. עושה: מסווגת את פקודות התיקון בקוד קבוע (safety.assess), לא במודל.
+    3. עושה: מסווגת את פקודות התיקון בקוד קבוע (safety.assess), לא במודל. ב-v2, תיקון שחוזר על ניסיון קודם גם
+       אחרי שנחסם, לא רץ לבד: הוא עובר לאישור אדם.
     """
-    return {"fix_risks": safety.assess(state["proposed_fix"].commands)}
+    commands = state["proposed_fix"].commands
+    risks = safety.assess(commands)
+    earlier = state.get("attempt_history", [])[:-1]  # האחרון ברשימה הוא ההצעה הנוכחית עצמה
+    if version_of(runtime.context) == "v2" and memory.is_repeat(commands, earlier):
+        risks.append(Risk(kind="repeated", command=" && ".join(commands)))
+    return {"fix_risks": risks}
 
 
 def _approval_request(state: RunState) -> dict:
