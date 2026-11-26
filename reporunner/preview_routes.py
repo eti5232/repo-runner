@@ -1,4 +1,4 @@
-"""נקודות קצה לתצוגה: הגשת קובץ ההקלטה לדפדפן, ועצירת תצוגה חיה.
+"""נקודות קצה לתצוגה ולעצירה: הגשת קובץ ההקלטה לדפדפן, עצירת תצוגה חיה, ומחיקת הקונטיינרים של ריצה שנעצרה.
 
 מתווספות לשרת של LangGraph דרך reporunner/api.py.
 """
@@ -9,7 +9,7 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Route
 
-from reporunner import display
+from reporunner import cancel, display
 from reporunner.sandbox import Sandbox
 
 CONTAINER_NAME = re.compile(r"reporunner-[A-Za-z0-9_.-]+")  # רק קונטיינרים של RepoRunner
@@ -58,7 +58,23 @@ async def stop_preview(request: Request) -> JSONResponse:
     return JSONResponse({"ok": True})
 
 
+async def cancel_run(request: Request) -> JSONResponse:
+    """
+    1. מקבלת: בקשת POST עם JSON: {thread_id}.
+    2. מחזירה: {"removed": n}, או שגיאה 400.
+    3. עושה: מוחקת את הקונטיינרים של ריצה שהמשתמשת עצרה, כדי שלא יישארו פעילים ברקע.
+    """
+    try:
+        thread_id = str((await request.json())["thread_id"])
+    except (ValueError, KeyError, TypeError):
+        return JSONResponse({"error": "נדרש thread_id"}, status_code=400)
+    if not re.fullmatch(r"[A-Za-z0-9-]{8,64}", thread_id):
+        return JSONResponse({"error": "מזהה לא תקין"}, status_code=400)
+    return JSONResponse({"removed": await run_in_threadpool(cancel.cancel, thread_id)})
+
+
 routes = [
+    Route("/reporunner/cancel", cancel_run, methods=["POST"]),
     Route("/reporunner/recording/{container}", serve_recording, methods=["GET"]),
     Route("/reporunner/stop", stop_preview, methods=["POST"]),
 ]

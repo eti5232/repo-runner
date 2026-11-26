@@ -4,6 +4,7 @@
 עם מגבלות זיכרון ו-CPU, כמשתמש רגיל, ובלי גישה לקבצים של המחשב.
 """
 import io
+import os
 import re
 import shlex
 import ssl
@@ -19,10 +20,11 @@ from pathlib import Path
 import docker
 from docker.models.containers import Container
 
-from reporunner import config
+from reporunner import cancel, config
 from reporunner.ignore import skip_label
 from reporunner.models import CommandResult
 from reporunner.output import clip_output
+from reporunner.source import SourceError, clone_problem
 
 CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
 TIMEOUT_EXIT_CODE = 124  # קוד היציאה שהפקודה timeout מחזירה כשהזמן נגמר
@@ -170,8 +172,10 @@ class Sandbox:
         except docker.errors.ImageNotFound:
             self.client.images.pull(image)
 
+        thread_id = cancel.current_thread_id()
         self.container = self.client.containers.run(
             image,
+            labels={cancel.THREAD_LABEL: thread_id} if thread_id else {},  # לפי הסימון מוחקים כשעוצרים ריצה
             command=["sleep", "infinity"],  # הקונטיינר רק "חי"; את הפקודות שולחים אליו עם exec
             name=self.name,
             detach=True,
@@ -227,7 +231,10 @@ class Sandbox:
         3. עושה: מוחקת את הקונטיינר. ה-volume של ה-cache נשאר לריצה הבאה.
         """
         if self.container is not None:
-            self.container.remove(force=True)
+            try:
+                self.container.remove(force=True)
+            except docker.errors.NotFound:  # כבר נמחק, למשל בעצירת הריצה
+                pass
             self.container = None
 
     def stop_later(self, seconds: float) -> None:
@@ -288,12 +295,28 @@ class Sandbox:
         1. מקבלת: url ו-commit (לא חובה).
         2. מחזירה: כלום.
         3. עושה: משכפלת את הפרויקט במחשב המארח (בתמונה אין git), נועלת ל-commit אם צוין, ומעתיקה לקונטיינר.
+           עם מגבלת זמן ובלי חלונות התחברות, כדי ששכפול לא יישאר תקוע. כשל מדווח כ-SourceError עם הסבר.
         """
-        with tempfile.TemporaryDirectory() as tmp:
+        # בלי זה Git ב-Windows עלול לפתוח חלון התחברות ולחכות לנצח
+        environment = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never"}
+        depth = [] if commit else ["--depth", "1"]  # בלי commit מסוים אין צורך בהיסטוריה, וזה מהיר בהרבה
+
+        def git(*arguments: str) -> None:
+            """מריצה פקודת git אחת עם מגבלת הזמן."""
+            try:
+                subprocess.run(["git", *arguments], check=True, capture_output=True, env=environment,
+                               stdin=subprocess.DEVNULL, timeout=config.CLONE_TIMEOUT_SEC)
+            except subprocess.TimeoutExpired as error:
+                raise SourceError(f"השכפול לא הסתיים בתוך {config.CLONE_TIMEOUT_SEC} שניות. ייתכן שהריפו גדול מאוד "
+                                  "או שהרשת איטית. אפשר להוריד אותו ולתת תיקייה.") from error
+            except subprocess.CalledProcessError as error:
+                raise SourceError(clone_problem(error.stderr.decode(errors="replace"))) from error
+
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             target = Path(tmp) / "repo"
-            subprocess.run(["git", "clone", "--quiet", url, str(target)], check=True, capture_output=True)
+            git("clone", "--quiet", *depth, url, str(target))
             if commit:
-                subprocess.run(["git", "-C", str(target), "checkout", "--quiet", commit], check=True, capture_output=True)
+                git("-C", str(target), "checkout", "--quiet", commit)
             self.copy_project(target)
 
     def copy_state_to(self, other: "Sandbox") -> None:

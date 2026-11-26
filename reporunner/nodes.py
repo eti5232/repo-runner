@@ -7,10 +7,11 @@ from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langgraph.runtime import Runtime
 from langgraph.types import interrupt
 
-from reporunner import artifacts, config, display, entrypoint, memory, prompts, safety
+from reporunner import artifacts, cancel, config, display, entrypoint, memory, prompts, safety
 from reporunner.context import RunContext, version_of
 from reporunner.models import Approval, Attempt, Diagnosis, Fix, ProjectProfile, Risk, Step, SuccessCheck
 from reporunner.sandbox import Sandbox
+from reporunner.source import SourceError, normalize_source, source_problem
 from reporunner.state import RunState
 from reporunner.tools import INVESTIGATION_TOOLS
 
@@ -50,12 +51,17 @@ def clone_repo(state: RunState) -> dict:
     """
     1. מקבלת: state עם source (נתיב מקומי או קישור GitHub) ו-commit (לא חובה).
     2. מחזירה: {container, status}.
-    3. עושה: יוצרת קונטיינר ומכניסה אליו את הפרויקט; אם ההעתקה נכשלת מוחקת את הקונטיינר.
+    3. עושה: בודקת את הקלט לפני הכול (כדי להיכשל מיד עם הסבר), יוצרת קונטיינר ומכניסה אליו את הפרויקט;
+       אם ההעתקה נכשלת מוחקת את הקונטיינר.
     """
+    source = normalize_source(state["source"])
+    problem = source_problem(source)
+    if problem:
+        raise SourceError(problem)
+    thread_id = cancel.current_thread_id()
     box = Sandbox()
     box.start()
     try:
-        source = state["source"]
         skipped: list[str] = []
         if Path(source).is_dir():
             skipped = box.copy_project(Path(source))
@@ -64,6 +70,9 @@ def clone_repo(state: RunState) -> dict:
     except Exception:
         box.stop()  # כמו ב-start(): אם נכשלנו באמצע, לא משאירים קונטיינר יתום
         raise
+    if cancel.is_cancelled(thread_id):  # המשתמשת עצרה בזמן שהשכפול רץ
+        box.stop()
+        raise SourceError("הריצה בוטלה")
     return {"container": box.name, "status": "running", "skipped": skipped}
 
 

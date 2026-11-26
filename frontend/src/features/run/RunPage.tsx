@@ -8,6 +8,7 @@ import { CommandsPanel } from "@/features/run/components/CommandsPanel";
 import { Conversation } from "@/features/run/components/Conversation";
 import { RunError } from "@/features/run/components/RunError";
 import { RepoBand } from "@/features/run/components/RepoBand";
+import { RunProgress } from "@/features/run/components/RunProgress";
 import { RunHeader } from "@/features/run/components/RunHeader";
 import { RunTabs, type RunTab } from "@/features/run/components/RunTabs";
 import { SidePanel } from "@/features/run/components/SidePanel";
@@ -65,7 +66,11 @@ export function RunPage() {
       <RepoBand source={run.values.source ?? startSource} phase={run.phase} />
       <PageContainer className="pb-20 pt-8">
         <RunHeader run={run} />
-        {run.failure && <RunError message={run.failure} />}
+        {run.failure && <RunError title="הריצה נעצרה בגלל שגיאה" message={run.failure} />}
+        {run.stopped && (
+          <RunError title="הריצה נעצרה לפני שהסתיימה" message="היא לא תתקדם יותר. אפשר להתחיל ריצה חדשה עם אותו פרויקט." />
+        )}
+        <RunProgress run={run} />
         <AgentPipeline stages={stages} />
 
         <div className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_310px]">

@@ -13,12 +13,13 @@ type ConversationProps = { run: AgentRun; items: TimelineItem[] };
 /** ציר הזמן של הריצה בסגנון שיחה ב-Pull Request, ובסופו מה שקורה עכשיו (עבודה, אבחון או שאלה אלייך). */
 export function Conversation({ run, items }: ConversationProps) {
   const { values, phase, approval, currentNode } = run;
-  const finished = phase === "succeeded" || phase === "failed";
+  const ended = Boolean(run.failure) || run.stopped;
+  const finished = phase === "succeeded" || phase === "failed" || ended;
 
   return (
     <div className="relative space-y-5 before:absolute before:inset-y-2 before:start-[15px] before:w-0.5 before:bg-line">
       {items.map((item, index) => (
-        <TimelineRow key={index} item={item} />
+        <TimelineRow key={index} item={item} ended={ended} />
       ))}
 
       {!finished && values.diagnosis && approval?.kind !== "sensitive_fix" && (
@@ -28,7 +29,7 @@ export function Conversation({ run, items }: ConversationProps) {
         </BotComment>
       )}
 
-      {phase === "running" && (
+      {phase === "running" && !ended && (
         <TimelineEvent tone="work">
           RepoRunner עובד: <b className="font-semibold text-ink">{currentNode ? (NODE_LABEL[currentNode] ?? currentNode) : "מתחיל"}</b>…
         </TimelineEvent>
@@ -39,7 +40,7 @@ export function Conversation({ run, items }: ConversationProps) {
   );
 }
 
-function TimelineRow({ item }: { item: TimelineItem }) {
+function TimelineRow({ item, ended }: { item: TimelineItem; ended: boolean }) {
   if (item.kind === "attempt") return <AttemptCard attempt={item.attempt} />;
   if (item.kind === "event") {
     return (
@@ -58,7 +59,7 @@ function TimelineRow({ item }: { item: TimelineItem }) {
           {item.profile.run_command && <> הפקודה להרצה: <code>{item.profile.run_command}</code>.</>}
         </p>
       ) : (
-        <p>משכפל ומנתח את הפרויקט…</p>
+        <p>{ended ? "הריצה נעצרה לפני שהפרויקט נותח." : "משכפל ומנתח את הפרויקט…"}</p>
       )}
       {item.skipped.length > 0 && (
         <p className="mt-3 text-sm text-muted">

@@ -35,6 +35,28 @@ export async function listRuns(limit = 50): Promise<RunSummary[]> {
     }));
 }
 
+/** מצב הריצה בשרת, ואם נכשלה גם הודעת השגיאה שלה. */
+export async function runOutcome(threadId: string): Promise<{ status: RunSummary["threadStatus"]; error: string | null }> {
+  const thread = await client.threads.get(threadId);
+  if (thread.status !== "error") return { status: thread.status, error: null };
+  const state = await client.threads.getState(threadId);
+  const failed = state.tasks?.find((task) => task.error);
+  return { status: thread.status, error: failed?.error ?? "" };
+}
+
+/** מבטלת בשרת את כל הריצות הפעילות של ה-thread (לא רק את ההאזנה בדפדפן). */
+export async function cancelActiveRuns(threadId: string): Promise<void> {
+  const runs = await client.runs.list(threadId);
+  const active = runs.filter((run) => run.status === "running" || run.status === "pending");
+  await Promise.all(active.map((run) => client.runs.cancel(threadId, run.run_id)));
+  // ביטול בשרת לא מוחק את הקונטיינר, ולכן מבקשים את זה בנפרד (reporunner/preview_routes.py)
+  await fetch(`${LANGGRAPH_URL}/reporunner/cancel`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ thread_id: threadId }),
+  });
+}
+
 /** בודקת שהשרת של הסוכן זמין. */
 export async function pingServer(): Promise<boolean> {
   try {

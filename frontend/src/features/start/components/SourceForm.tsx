@@ -19,7 +19,7 @@ export function SourceForm() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const value = source.trim();
+    const value = source.trim().replace(/^["']+|["']+$/g, ""); // Windows מוסיף מירכאות ב"העתק כנתיב"
     if (!value) return;
     setBusy(true);
     setError(null);

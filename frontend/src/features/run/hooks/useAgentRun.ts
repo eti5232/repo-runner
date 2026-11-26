@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
-import { client } from "@/api/client";
+import { cancelActiveRuns, runOutcome } from "@/api/runs";
 import { AGENT_VERSION, ASSISTANT_ID, LANGGRAPH_URL, RECURSION_LIMIT } from "@/config/env";
+import { errorText } from "@/features/run/lib/errorText";
 import { derivePhase } from "@/lib/runPhase";
 import type { ApprovalAnswer, ApprovalRequest, PreviewMode, RunPhase, RunState } from "@/types/agent";
 
@@ -18,6 +19,8 @@ export type AgentRun = {
   loading: boolean;
   /** הודעת שגיאה אם הריצה נכשלה בשרת, אחרת null */
   failure: string | null;
+  /** הריצה נעצרה לפני שהסתיימה (ע"י המשתמשת או כי השרת הופעל מחדש) */
+  stopped: boolean;
   start: (source: string, previewMode: PreviewMode) => void;
   answer: (answer: ApprovalAnswer) => void;
   stop: () => void;
@@ -42,27 +45,38 @@ export function useAgentRun(threadId: string): AgentRun {
     onFinish: () => setCurrentNode(null),
   });
 
-  // הריצה יכולה להיכשל בשרת (למשל שכפול שנכשל). בלי בדיקה כזו המסך נשאר "טוען" לנצח
-  const [threadFailed, setThreadFailed] = useState(false);
+  // הריצה יכולה להיכשל או להיעצר בשרת. בלי בדיקה כזו המסך נשאר "טוען" לנצח
+  const [outcome, setOutcome] = useState<{ status: string; error: string | null } | null>(null);
+  const [cancelled, setCancelled] = useState(false);
   useEffect(() => {
-    let cancelled = false;
-    client.threads
-      .get(threadId)
-      .then((thread) => !cancelled && setThreadFailed(thread.status === "error"))
-      .catch(() => undefined);
+    let ignore = false;
+    const check = () =>
+      runOutcome(threadId)
+        .then((result) => !ignore && setOutcome(result))
+        .catch(() => undefined);
+    void check();
+    const timer = window.setInterval(check, 5000);
     return () => {
-      cancelled = true;
+      ignore = true;
+      window.clearInterval(timer);
     };
   }, [threadId, stream.isLoading]);
-  const failure = stream.error
-    ? String(stream.error instanceof Error ? stream.error.message : stream.error)
-    : threadFailed
-      ? "הריצה נכשלה בשרת. הפרטים ביומן של שרת LangGraph."
-      : null;
+  const failure =
+    outcome?.status === "error"
+      ? errorText(outcome.error || "הריצה נכשלה בשרת. הפרטים ביומן של שרת LangGraph.")
+      : stream.error
+        ? errorText(String(stream.error instanceof Error ? stream.error.message : stream.error))
+        : null;
 
   const approval = stream.interrupt?.value as ApprovalRequest | undefined;
   const values = (stream.values ?? {}) as RunState;
-  const phase = derivePhase(values, { isLoading: stream.isLoading, waiting: Boolean(approval) });
+  // "busy" מהשרת: ריצה שנפתחה מחדש בזמן השכפול, כשעוד אין State, היא עדיין ריצה פעילה
+  const busy = stream.isLoading || outcome?.status === "busy";
+  const phase = derivePhase(values, { isLoading: busy, waiting: Boolean(approval) });
+
+  // יש קלט, אין תוצאה ואין שאלה, והשרת לא עובד על הריצה: היא נעצרה באמצע
+  const unfinished = Boolean(values.source) && !values.report && !approval && !failure;
+  const stopped = unfinished && (cancelled || (outcome?.status === "idle" && !stream.isLoading && !stream.isThreadLoading));
 
   return {
     values,
@@ -71,10 +85,15 @@ export function useAgentRun(threadId: string): AgentRun {
     currentNode,
     loading: stream.isThreadLoading,
     failure,
+    stopped,
     start: (source, previewMode) =>
       void stream.submit({ source, preview_mode: previewMode }, { config: { recursion_limit: RECURSION_LIMIT }, context: RUN_CONTEXT }),
     answer: (answer) =>
       void stream.submit(null, { command: { resume: answer }, config: { recursion_limit: RECURSION_LIMIT }, context: RUN_CONTEXT }),
-    stop: () => void stream.stop(),
+    stop: () => {
+      setCancelled(true);
+      void stream.stop();
+      void cancelActiveRuns(threadId).catch(() => undefined);
+    },
   };
 }
